@@ -35,10 +35,10 @@ private:
 	void readPositionOffset();
 
 	//variables
-	int CSPin;
-	int buffer;
-	int bufferOld;
-	int increment;
-	int positionOffset;
-	int received;
+	int m_CSPin;
+	int m_buffer;
+	int m_bufferOld;
+	int m_increment;
+	int m_positionOffset;
+	int m_received;
 };

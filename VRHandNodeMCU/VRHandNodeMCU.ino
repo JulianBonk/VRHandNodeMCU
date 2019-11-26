@@ -4,53 +4,98 @@
  Author:	julia
 */
 
-#include "ForceServo.h"
-#include "EMS22A.h"
+#include "configuration.h" //configure parameters
+#include "ATXCommunication.h" //custom communication library
+#include "EMS22A.h"	//custom encoder library
+
 #include "A4988.h"
 #include "SPI.h"
 
-//Parameters for stepper
-#define MOTOR_STEPS 2520
-#define RPM 120
-#define MOTOR_ACCEL 2000
-#define MOTOR_DECEL 1000
-#define DIR D2
-#define STEP D1
-
-//CSPins
-int CSAtxPin = D4;
-int CSEncoderPin = D3;
+#define DEBUG
 
 A4988 stepper(MOTOR_STEPS, DIR, STEP);
-
-int degree = 20;
-
+ATXCommunication Atx(CSAtxPin);
 EMS22A Encoder(CSEncoderPin);
 
+//processparameters
+	//Servo
+int servoIntegral[2] = { 0, 0 };
+int servoForceDelta[2] = { 0, 0 };
+int servoForceTarget[2] = { servo1ForceFreerun, servo1ForceFreerun };
+int servoPFactor[2] = { servo1PFactor,servo2PFactor };
+int servoIFactor[2] = { servo1IFactor, servo2IFactor };
+int servoForceFreerun[2] = { servo1ForceFreerun, servo2ForceFreerun };
+int servoStiffness[2] = { servo1Stiffness, servo2Stiffness };
+int servoFreerunPosition[2] = { servo1FreerunPosition, servo2FreerunPosition };
+//BLDC
+int BldcPositionTarget = 0;
+int BldcPositionDelta = 0;
+int BldcForce = 0;
+int BldcForceTarget = 0;
+int BldcForceDelta = 0;
+int BldcIntegral = 0;
+int BldcPFactor = confBldcPFactor;
+int BldcIFactor = confBldcIFactor;
+int BldcForceFreerun = confBldcForceFreerun;
+int BldcStiffness = confBldcStiffness;
+int BldcFreerunPosition = confBldcFreerunPosition;
+
 void setup() {
+	//stepper setup
 	stepper.begin(RPM);
 	stepper.enable();
 	stepper.setSpeedProfile(stepper.LINEAR_SPEED, MOTOR_ACCEL, MOTOR_DECEL);
 
+	//SPI setup
 	SPI.begin();
-	SPI.setFrequency(100000);
+	SPI.setFrequency(SPIFrequency);
+
+	//Serial setup only if DEBUG is defined
+#ifdef DEBUG
 	Serial.begin(115200);
+#endif //DEBUG
 }
 
+//MAIN CODE
+
 void loop() {
-	//if nextAction() is 0 all pulses were sent
-	unsigned wait_time = stepper.nextAction();
-	if (stepper.nextAction()) {
-		delay(10);
-	}
-	else {
-		delay(10);
-		//move by x degree
-		stepper.startRotate(degree);
-		degree = degree * -1;
+	Encoder.readPosition();
+	Atx.readAll();
+
+#ifdef DEBUG
+	Serial.printf("Data received\n Servo1 Force: %d\tServo2 Force: %d\tBLDC: %d\tCurrent: %d\n\n", Atx.servoForce[0], Atx.servoForce[1], Atx.BldcMagneticPosition, Atx.current);
+#endif // DEBUG
+
+	for (int i = 0; i < 2; i++) {
+		servoForceDelta[i] = servoForceTarget[i] - Atx.servoForce[i];
+		servoIntegral[i] += servoForceDelta[i];
+		Atx.servoPosition[i] = servoPFactor[i] * servoForceDelta[i] + servoIFactor[i] * servoIntegral[i];
+		if (Atx.servoPosition[i] <= servoFreerunPosition[i]) {
+			servoForceTarget[i] = servoForceFreerun[i];
+		}
+		else {
+			servoForceTarget[i] = Atx.servoPosition[i] * servoStiffness[i] + servoForceFreerun[i];
+		}
 	}
 
-	Encoder.readPosition();
-	Serial.println(Encoder.position);
-	//Serial.printf("pos: %d   off: %d   inc: %d\n\n\n", Encoder.position, Encoder.positionOffset, Encoder.increment);
+	BldcForce = BldcPositionTarget - Atx.BldcMagneticPosition;
+	BldcForceDelta = BldcForceTarget - BldcForce;
+	BldcIntegral += BldcForceDelta;
+	BldcPositionTarget = BldcPFactor * BldcForceDelta + BldcIntegral * BldcForceDelta;
+	if (BldcPositionTarget <= BldcFreerunPosition) {
+		BldcForceTarget = BldcForceFreerun;
+	}
+	else {
+		BldcForceTarget = BldcPositionTarget * BldcStiffness + BldcForceFreerun;
+	}
+
+	if (!stepper.nextAction()) {
+		stepper.startRotate(BldcPositionTarget);
+	}
+
+	Atx.sendAndReceiveAll();
+
+#ifdef DEBUG
+	Serial.printf("PI Calculation completed\n\nServo1 Position: %d\tServo2 Position: %d, BLDC Position: %d, BLDC Current: %d\n\n", Atx.servoPosition[0], Atx.servoPosition[1], BldcPositionTarget, Atx.current);
+#endif // DEBUG
 }

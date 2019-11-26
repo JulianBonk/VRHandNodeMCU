@@ -112,13 +112,15 @@
     </None>
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ATXCommunication.h" />
+    <ClInclude Include="configuration.h" />
     <ClInclude Include="EMS22A.h" />
-    <ClInclude Include="ForceServo.h" />
     <ClInclude Include="__vm\.VRHandNodeMCU.vsarduino.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="ATXCommunication.cpp" />
+    <ClCompile Include="configuration.cpp" />
     <ClCompile Include="EMS22A.cpp" />
-    <ClCompile Include="ForceServo.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
