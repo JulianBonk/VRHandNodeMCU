@@ -17,6 +17,7 @@ A4988 stepper(MOTOR_STEPS, DIR, STEP);
 ATXCommunication Atx(CSAtxPin);
 EMS22A Encoder(CSEncoderPin);
 
+
 //processparameters
 	//Servo
 int servoIntegral[2] = { 0, 0 };
@@ -28,7 +29,7 @@ int servoForceFreerun[2] = { servo1ForceFreerun, servo2ForceFreerun };
 int servoStiffness[2] = { servo1Stiffness, servo2Stiffness };
 int servoFreerunPosition[2] = { servo1FreerunPosition, servo2FreerunPosition };
 //BLDC
-int BldcPositionTarget = 0;
+int BldcPositionTarget = 2000;
 int BldcPositionDelta = 0;
 int BldcForce = 0;
 int BldcForceTarget = 0;
@@ -40,6 +41,7 @@ int BldcForceFreerun = confBldcForceFreerun;
 int BldcStiffness = confBldcStiffness;
 int BldcFreerunPosition = confBldcFreerunPosition;
 
+
 void setup() {
 	//stepper setup
 	stepper.begin(RPM);
@@ -50,16 +52,19 @@ void setup() {
 	SPI.begin();
 	SPI.setFrequency(SPIFrequency);
 
+	Atx.current = confBldcCurrent;
+
 	//Serial setup only if DEBUG is defined
 #ifdef DEBUG
 	Serial.begin(115200);
+	Serial.println("begin:");
 #endif //DEBUG
 }
 
 //MAIN CODE
 
 void loop() {
-	Encoder.readPosition();
+	//Encoder.readPosition();
 	Atx.readAll();
 
 #ifdef DEBUG
@@ -90,12 +95,23 @@ void loop() {
 	}
 
 	if (!stepper.nextAction()) {
-		stepper.startRotate(BldcPositionTarget);
+		//stepper.startRotate(BldcPositionTarget);
 	}
 
-	Atx.sendAndReceiveAll();
+	//Atx.sendAndReceiveAll();
+	//if (stepper.nextAction()) {
+	//	delay(10);
+	//}
+	//else {
+	//	//delay(1000);
+	//	//move by x degree
+	//	//stepper.startRotate(degree);
+	//	stepper.move(BldcPositionTarget);
+	//	BldcPositionTarget = BldcPositionTarget * -1;
+	//}
+		
 
 #ifdef DEBUG
-	Serial.printf("PI Calculation completed\n\nServo1 Position: %d\tServo2 Position: %d, BLDC Position: %d, BLDC Current: %d\n\n", Atx.servoPosition[0], Atx.servoPosition[1], BldcPositionTarget, Atx.current);
+	//Serial.printf("PI Calculation completed\n\nServo1 Position: %d\tServo2 Position: %d, BLDC Position: %d, BLDC Current: %d\n\n", Atx.servoPosition[0], Atx.servoPosition[1], BldcPositionTarget, Atx.current);
 #endif // DEBUG
 }

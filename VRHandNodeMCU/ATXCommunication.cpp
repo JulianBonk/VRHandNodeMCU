@@ -50,8 +50,6 @@ void ATXCommunication::readAll() {
 	m_setCsPinHighLow();
 	m_BldcPositionLB = SPI.transfer(0x00);
 	m_setCsPinHighLow();
-	current = SPI.transfer(0x00);
-	m_setCsPinHighLow();
 	m_Servo1ForceHB = SPI.transfer(0x00);
 	m_setCsPinHighLow();
 	m_Servo1ForceLB = SPI.transfer(0x00);
@@ -59,6 +57,8 @@ void ATXCommunication::readAll() {
 	m_Servo2ForceHB = SPI.transfer(0x00);
 	m_setCsPinHighLow();
 	m_Servo2ForceLB = SPI.transfer(0x00);
+	m_setCsPinHighLow();
+	current = SPI.transfer(0x00);
 
 	m_combineHighAndLowByte();
 
@@ -67,8 +67,8 @@ void ATXCommunication::readAll() {
 
 void ATXCommunication::m_combineHighAndLowByte() {
 	BldcMagneticPosition = m_BldcPositionHB << 8 + m_BldcPositionLB;
-	servoForce[0] = m_Servo1ForceHB << 8 + m_Servo1ForceLB;
-	servoForce[1] = m_Servo2ForceHB << 8 + m_Servo2ForceLB;
+	servoForce[0] = m_Servo1ForceLB << 8 + m_Servo1ForceHB;
+	servoForce[1] = m_Servo2ForceLB << 8 + m_Servo2ForceHB;
 }
 
 void ATXCommunication::m_setCsPinHighLow() {

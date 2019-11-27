@@ -29,6 +29,7 @@
 #define confBldcForceFreerun	1
 #define confBldcStiffness		1
 #define confBldcFreerunPosition	1
+#define confBldcCurrent			255
 
 //stepper parameters
 #define MOTOR_STEPS 2520
@@ -42,5 +43,5 @@
 #define SPIFrequency 1000000	//max frequency for encoder 1Mhz
 
 //SPI slave select pins
-const int CSAtxPin = D4;
+const int CSAtxPin = D8;
 const int CSEncoderPin = D3;
