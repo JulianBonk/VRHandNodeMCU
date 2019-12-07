@@ -16,7 +16,7 @@ class EMS22A
 {
 public:
 	EMS22A() = delete;
-	EMS22A(int EncoderCSPin);
+	EMS22A(int EncoderCSPin, int SpiFreq);
 	//functions
 	void readPosition();
 	void readAll();
@@ -35,6 +35,7 @@ private:
 	void readPositionOffset();
 
 	//variables
+	int SpiFrequency;
 	int m_CSPin;
 	int m_buffer;
 	int m_bufferOld;

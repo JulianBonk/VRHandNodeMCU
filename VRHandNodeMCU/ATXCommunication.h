@@ -15,7 +15,7 @@
 class ATXCommunication
 {
 public:
-	ATXCommunication(int CsPin);
+	ATXCommunication(int CsPin, int SpiFreq);
 	~ATXCommunication();
 
 	//functions
@@ -31,13 +31,19 @@ public:
 private:
 	//functions
 	void m_combineHighAndLowByte();
-	void m_setCsPinHighLow();
 	//variables
+	int SpiFrequency;
 	int m_CsPin;
+	int m_iteration;
+	int m_BldcPositionreceived;
+	int m_BldcPositionBefore;
+	int m_BldcMagneticPositionOffset;
+	int m_ServoForceOffset[2];
 	byte m_BldcPositionHB;
 	byte m_BldcPositionLB;
 	byte m_Servo1ForceHB;
 	byte m_Servo1ForceLB;
 	byte m_Servo2ForceHB;
 	byte m_Servo2ForceLB;
+	bool m_firstCall;
 };

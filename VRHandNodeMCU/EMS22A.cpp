@@ -5,19 +5,22 @@
 #include "EMS22A.h"
 
 //Constructor with one parameter
-EMS22A::EMS22A(int EncoderCSPin)
+EMS22A::EMS22A(int EncoderCSPin, int SpiFreq)
 {
 	SPI.begin();
+	SpiFrequency = SpiFreq;
 	m_buffer = 0;
 	m_bufferOld = 0;
 	m_increment = 0;
 	m_positionOffset = 0;
 	m_CSPin = EncoderCSPin;
 	pinMode(m_CSPin, OUTPUT);
+	digitalWrite(m_CSPin, HIGH);
 	readPositionOffset();
 }
 
 void EMS22A::readPosition() {
+	//SPI.setFrequency(SpiFrequency);
 	m_bufferOld = m_buffer;
 	digitalWrite(m_CSPin, LOW);
 	m_buffer = SPI.transfer16(0) >> 6;
@@ -30,6 +33,7 @@ void EMS22A::readPosition() {
 }
 
 void EMS22A::readPositionOffset() {
+	//SPI.setFrequency(SpiFrequency);
 	digitalWrite(m_CSPin, LOW);
 	m_positionOffset = SPI.transfer16(0) >> 6;
 	digitalWrite(m_CSPin, HIGH);
@@ -37,6 +41,7 @@ void EMS22A::readPositionOffset() {
 }
 
 void EMS22A::readAll() {
+	//SPI.setFrequency(SpiFrequency);
 	digitalWrite(m_CSPin, LOW);
 	m_received = SPI.transfer16(0);
 	digitalWrite(m_CSPin, HIGH);
