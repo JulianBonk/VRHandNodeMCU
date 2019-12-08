@@ -28,23 +28,24 @@ int servoForceFreerun[2] = { servo1ForceFreerun, servo2ForceFreerun };
 int servoStiffness[2] = { servo1Stiffness, servo2Stiffness };
 int servoFreerunPosition[2] = { servo1FreerunPosition, servo2FreerunPosition };
 //BLDC
-int BldcPositionTarget = 0;
-int BldcPositionDelta = 0;
 int BldcForceRaw = 0;
 int BldcForce = 0;
 int BldcForceOffset = 0;
 int BldcForceTarget = confBldcForceFreerun;
 int BldcForceDelta = 0;
 int BldcIntegral = 0;
-int BldcPFactor = confBldcPFactor;
-int BldcIFactor = confBldcIFactor;
 int BldcForceFreerun = confBldcForceFreerun;
-int BldcStiffness = confBldcStiffness;
 int BldcFreerunPosition = confBldcFreerunPosition;
+float BldcStiffness = confBldcStiffness;
+float BldcPFactor = confBldcPFactor;
+float BldcIFactor = confBldcIFactor;
 
 //timing variables
 unsigned long SpiMicroTime = 3000;
 unsigned long SpiMicrosBefore;
+
+//functions
+void calculateBldcForce();
 
 #ifdef DEBUG
 int debugMilliTime = 200;
@@ -55,6 +56,7 @@ void setup() {
 	////stepper setup
 	Stepper.setMaxSpeed(bldcSpeed);
 	Stepper.setAcceleration(bldcAcceleration);
+	Stepper.setCurrentPosition(0);
 
 	//SPI setup
 	SPI.begin();
@@ -63,10 +65,8 @@ void setup() {
 	//Serial setup only if DEBUG is defined
 #ifdef DEBUG
 	Serial.begin(115200);
-	pinMode(D3, OUTPUT);
-	pinMode(D3, HIGH);
 #endif //DEBUG
-	delay(5000);
+	delay(2000);
 }
 
 void loop() {
@@ -75,31 +75,18 @@ void loop() {
 		Encoder.readPosition();
 		Atx.current = 0xFF;
 		Atx.sendAndReceiveAll();
+		calculateBldcForce();
 	}
 
 #ifdef DEBUG
 	if ((millis() - debugMillisBefore) > debugMilliTime) {
 		debugMillisBefore = millis();
-		Serial.printf("Bldc: %d\tEncoder: %d\tForce: %d\n", Atx.BldcMagneticPosition, Encoder.position, BldcForce);
+		Serial.printf("Bldc: %d\tForce: %d\tTargetForce: %d\tForceDelta: %d\tTargetPosition: %d\n", Atx.BldcMagneticPosition, BldcForce, BldcForceTarget, BldcForceDelta, Stepper.targetPosition());
 		//Serial.printf("Force: %d\tTarget: %d\n", BldcForce, BldcPositionTarget);
 	}
 #endif // DEBUG
 
-	BldcForceRaw = Encoder.position - Atx.BldcMagneticPosition;
-	if (BldcForce <= -73) {
-		BldcForceOffset++;
-	}
-	if (BldcForce >= 73) {
-		BldcForceOffset--;
-	}
-	BldcForce = 146 * BldcForceOffset + BldcForceRaw;
-
-	//BldcForceDelta = BldcForceTarget - BldcForce;
-	//BldcIntegral += BldcForceDelta;
-	//BldcPositionTarget = BldcPFactor * BldcForceDelta + BldcIntegral * BldcIFactor;
-
-	//Stepper.move(Stepper.currentPosition() + BldcPositionTarget);
-	//Stepper.run();
+	Stepper.run();
 
 	//for (int i = 0; i < 1; i++) {
 	//	servoForceDelta[i] = servoForceTarget[i] - Atx.servoForce[i];
@@ -112,4 +99,32 @@ void loop() {
 	//		servoForceTarget[i] = Atx.servoPosition[i] * servoStiffness[i] + servoForceFreerun[i];
 	//	}
 	//}
+}
+
+void calculateBldcForce() {
+	//calculate corrected Bldc force
+	BldcForceRaw = Encoder.position - Atx.BldcMagneticPosition;
+	if (BldcForce <= -73) {
+		BldcForceOffset++;
+	}
+	if (BldcForce >= 73) {
+		BldcForceOffset--;
+	}
+	BldcForce = 146 * BldcForceOffset + BldcForceRaw;
+
+	//calculate force target and delta
+	if (Stepper.currentPosition() < BldcFreerunPosition) {
+		BldcForceTarget = BldcForceFreerun;
+	}
+	else {
+		BldcForceTarget = BldcForceFreerun + (Stepper.currentPosition() - BldcFreerunPosition)*BldcStiffness;
+	}
+	BldcForceDelta = BldcForce - BldcForceTarget;
+
+	//calculate Steps to take
+	BldcIntegral += BldcForceDelta; //TODO: Rolling average
+	Stepper.moveTo(BldcPFactor * BldcForceDelta + BldcIFactor * BldcIntegral);
+	if (Stepper.targetPosition() <= 0) {
+		Stepper.moveTo(0);
+	}
 }

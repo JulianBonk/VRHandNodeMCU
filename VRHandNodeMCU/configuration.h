@@ -24,19 +24,13 @@
 #define servo2FreerunPosition	1
 
 //BLDC parameters
-#define confBldcPFactor			-1
-#define confBldcIFactor			0
-#define confBldcForceFreerun	5
-#define confBldcStiffness		1
-#define confBldcFreerunPosition	1
-#define bldcAcceleration		10000
-#define bldcSpeed				10
-
-//stepper parameters
-#define MOTOR_STEPS 2520
-#define RPM 200
-#define MOTOR_ACCEL 20000
-#define MOTOR_DECEL 20000
+#define confBldcPFactor			20
+#define confBldcIFactor			0.1
+#define confBldcForceFreerun	15
+#define confBldcStiffness		0.1
+#define confBldcFreerunPosition	3000
+#define bldcAcceleration		100000
+#define bldcSpeed				10000
 #define DIR D2
 #define STEP D1
 
