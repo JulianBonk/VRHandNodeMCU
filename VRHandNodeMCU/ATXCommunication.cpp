@@ -9,6 +9,8 @@ ATXCommunication::ATXCommunication(int CsPin, int SpiFreq) {
 	SpiFrequency = SpiFreq;
 	m_CsPin = CsPin;
 	pinMode(m_CsPin, OUTPUT);
+	digitalWrite(m_CsPin, LOW);
+	delay(1);
 	digitalWrite(m_CsPin, HIGH);
 	servoPosition[0] = 0;
 	servoPosition[1] = 0;
@@ -78,11 +80,13 @@ void ATXCommunication::m_combineHighAndLowByte() {
 
 	if (m_firstCall) {
 		m_BldcMagneticPositionOffset = m_BldcPositionreceived;
+		Serial.printf("Offset %d\n\n", m_BldcMagneticPositionOffset);
 		m_ServoForceOffset[0] = servoForce[0];
 		m_ServoForceOffset[1] = servoForce[1];
 		m_firstCall = false;
 	}
 
 	m_BldcPositionBefore = m_BldcPositionreceived;
-	BldcMagneticPosition = map((m_iteration * 360 + m_BldcPositionreceived - m_BldcMagneticPositionOffset), 0, 2520, 0, 1023);
+	//BldcMagneticPosition = map((m_iteration * 360 + m_BldcPositionreceived - m_BldcMagneticPositionOffset), 0, 2520, 0, 1023);
+	BldcMagneticPosition = m_iteration * 360 + m_BldcPositionreceived - m_BldcMagneticPositionOffset;
 }
